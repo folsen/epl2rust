@@ -1,0 +1,4 @@
+[package]
+name = "epl2img"
+version = "0.0.1"
+authors = ["Fredrik <ique@3h.se>"]
