@@ -77,17 +77,32 @@ fn parse_integer<I>(input: State<I>) -> ParseResult<i32, I>
     Ok((i.parse::<i32>().unwrap(), input))
 }
 
-fn parse_string_data<I>(input: State<I>) -> ParseResult<String, I>
+fn escaped_char<I>(input: State<I>) -> ParseResult<char, I>
     where I: Stream<Item=char> {
-    let wo_escape = many(satisfy(|c| c != '\\' && c != '"'));
-    let escape = many(string("\\\""));
-
-    // TODO: Incomplete, crashes in a backslash in string
-    let data = try(wo_escape).or(escape);
-
-    //let data = many(choice([wo_escape, escape]));
-    let mut data_string = between(satisfy(|c| c == '"'), satisfy(|c| c == '"'), data);
-    data_string.parse_state(input)
+    let (c, input) = try!(parser(any_char).parse_state(input));
+    let mut back_slash_char = satisfy(|c| "\"\\/bfnrt".chars().find(|x| *x == c).is_some()).map(|c| {
+        match c {
+            '"' => '"',
+            '\\' => '\\',
+            '/' => '/',
+            'b' => '\u{0008}',
+            'f' => '\u{000c}',
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            c => c//Should never happen
+        }
+    });
+    match c {
+        '\\' => input.combine(|input| back_slash_char.parse_state(input)),
+        '"'  => unexpected("\"").parse_state(input.into_inner()).map(|_| unreachable!()),
+        _    => Ok((c, input))
+    }
+}
+fn escaped_string<I>(input: State<I>) -> ParseResult<String, I>
+    where I: Stream<Item=char> {
+    between(string("\""), string("\""), many(parser(escaped_char)))
+        .parse_state(input)
 }
 
 pub fn parse_ascii_text<I>(input: State<I>) -> ParseResult<commands::AsciiText, I>
@@ -112,7 +127,7 @@ pub fn parse_ascii_text<I>(input: State<I>) -> ParseResult<commands::AsciiText, 
     let (_, input)        = try!(comma.parse_state(input.into_inner()));
     let (reverse, input)  = try!(parse_reverse(input.into_inner()));
     let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (data, input)     = try!(parse_string_data(input.into_inner()));
+    let (data, input)     = try!(escaped_string(input.into_inner()));
 
     let at = commands::AsciiText {
         h_start: h_start,
