@@ -2,8 +2,8 @@ extern crate parser_combinators;
 
 use std::borrow::{Cow};
 
-use self::parser_combinators::{skip_many1, any_char, not_followed_by, crlf, between, spaces, many, many1, parser, sep_by, satisfy,
-    Parser, ParserExt, ParseResult, ParseError, unexpected};
+use self::parser_combinators::*;
+use self::parser_combinators::combinator::{Many};
 use self::parser_combinators::primitives::{State, Stream, Error, Consumed};
 
 use commands;
@@ -79,7 +79,13 @@ fn parse_integer<I>(input: State<I>) -> ParseResult<i32, I>
 
 fn parse_string_data<I>(input: State<I>) -> ParseResult<String, I>
     where I: Stream<Item=char> {
-    let data = many(not_followed_by(parser(crlf)));
+    let wo_escape = many(satisfy(|c| c != '\\' && c != '"'));
+    let escape = many(string("\\\""));
+
+    // TODO: Incomplete, crashes in a backslash in string
+    let data = try(wo_escape).or(escape);
+
+    //let data = many(choice([wo_escape, escape]));
     let mut data_string = between(satisfy(|c| c == '"'), satisfy(|c| c == '"'), data);
     data_string.parse_state(input)
 }
