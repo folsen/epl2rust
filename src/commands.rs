@@ -4,6 +4,7 @@
 
 // Supported commands:
 
+#[derive(Debug)]
 pub enum Rotation {
     NoRotation,
     Degrees90,
@@ -14,6 +15,7 @@ pub enum Rotation {
 // Full font specification can be found on page 44 of the Zebra spec, but we
 // will not support Soft Font or numeric-only fonts and thus only allow values 1
 // through 5 for font selection
+#[derive(Debug)]
 pub enum Font {
     Size1,
     Size2,
@@ -31,24 +33,27 @@ pub struct HorizontalMultiplier {
 
 // Only accepts 1-9
 // This struct exists to make parsing clearer
+#[derive(Debug)]
 pub struct VerticalMultiplier {
-    multiplier: i32,
+    pub multiplier: i32,
 }
 
+#[derive(Debug)]
 pub enum ReverseImage {
     N, // normal
     R, // reverse image
 }
 
+#[derive(Debug)]
 pub struct AsciiText { // A
-    h_start: i32,
-    v_start: i32,
-    rotation: Rotation,
-    font_selection: Font,
-    h_mult: HorizontalMultiplier,
-    v_mult: VerticalMultiplier,
-    reverse: ReverseImage,
-    data: String, // Escaped string, "\"Company\"" should be parsed to store "Company" in the str
+    pub h_start: i32,
+    pub v_start: i32,
+    pub rotation: Rotation,
+    pub font_selection: Font,
+    pub h_mult: HorizontalMultiplier,
+    pub v_mult: VerticalMultiplier,
+    pub reverse: ReverseImage,
+    pub data: String, // Escaped string, "\"Company\"" should be parsed to store "Company" in the str
 }
 
 // There are tons of barcode types supported by the printer, see page 53 of spec.

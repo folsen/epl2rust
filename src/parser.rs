@@ -2,7 +2,7 @@ extern crate parser_combinators;
 
 use std::borrow::{Cow};
 
-use self::parser_combinators::{skip_many1, any_char, between, spaces, many1, parser, sep_by, satisfy,
+use self::parser_combinators::{skip_many1, any_char, not_followed_by, crlf, between, spaces, many, many1, parser, sep_by, satisfy,
     Parser, ParserExt, ParseResult, ParseError, unexpected};
 use self::parser_combinators::primitives::{State, Stream, Error, Consumed};
 
@@ -37,23 +37,23 @@ fn parse_font<I>(input: State<I>) -> ParseResult<commands::Font, I>
 
 fn parse_h_mult<I>(input: State<I>) -> ParseResult<commands::HorizontalMultiplier, I>
     where I: Stream<Item=char> {
-    let (i, new_input) = try!(parse_integer(input));
+    let (i, input) = try!(parse_integer(input));
     if (i >= 1 && i <= 6 || i == 8) {
-        Ok((commands::HorizontalMultiplier{multiplier: i}, new_input))
+        Ok((commands::HorizontalMultiplier{multiplier: i}, input))
     } else {
         let msg = Cow::Owned(String::from("Invalid argument for Horizontal Multiplier"));
-        Err(Consumed::Empty(ParseError::new(input.position, Error::Message(msg))))
+        Err(Consumed::Empty(ParseError::new(input.into_inner().position, Error::Message(msg))))
     }
 }
 
 fn parse_v_mult<I>(input: State<I>) -> ParseResult<commands::VerticalMultiplier, I>
     where I: Stream<Item=char> {
-    let (i, new_input) = try!(parse_integer(input));
+    let (i, input) = try!(parse_integer(input));
     if (i >= 1 && i <= 9) {
-        Ok((commands::VerticalMultiplier{multiplier: i}, new_input))
+        Ok((commands::VerticalMultiplier{multiplier: i}, input))
     } else {
         let msg = Cow::Owned(String::from("Invalid argument for Vertical Multiplier"));
-        Err(Consumed::Empty(ParseError::new(input.position, Error::Message(msg))))
+        Err(Consumed::Empty(ParseError::new(input.into_inner().position, Error::Message(msg))))
     }
 }
 
@@ -79,6 +79,9 @@ fn parse_integer<I>(input: State<I>) -> ParseResult<i32, I>
 
 fn parse_string_data<I>(input: State<I>) -> ParseResult<String, I>
     where I: Stream<Item=char> {
+    let data = many(not_followed_by(parser(crlf)));
+    let mut data_string = between(satisfy(|c| c == '"'), satisfy(|c| c == '"'), data);
+    data_string.parse_state(input)
 }
 
 pub fn parse_ascii_text<I>(input: State<I>) -> ParseResult<commands::AsciiText, I>
