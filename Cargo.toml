@@ -2,3 +2,7 @@
 name = "epl2img"
 version = "0.0.1"
 authors = ["Fredrik <ique@3h.se>"]
+
+[dependencies]
+image = "0.3.7"
+parser-combinators = "0.3.0"
