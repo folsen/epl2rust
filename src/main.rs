@@ -6,7 +6,7 @@ use std::fs::File;
 
 use parser_combinators::{parser};
 use parser_combinators::primitives::{Parser};
-use epl2img::commands;
+
 use epl2img::parser;
 
 fn main() {

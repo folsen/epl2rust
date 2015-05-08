@@ -3,7 +3,6 @@ extern crate parser_combinators;
 use std::borrow::{Cow};
 
 use self::parser_combinators::*;
-use self::parser_combinators::combinator::{Many};
 use self::parser_combinators::primitives::{State, Stream, Error, Consumed};
 
 use commands;
@@ -38,7 +37,7 @@ fn parse_font<I>(input: State<I>) -> ParseResult<commands::Font, I>
 fn parse_h_mult<I>(input: State<I>) -> ParseResult<commands::HorizontalMultiplier, I>
     where I: Stream<Item=char> {
     let (i, input) = try!(parse_integer(input));
-    if (i >= 1 && i <= 6 || i == 8) {
+    if i >= 1 && i <= 6 || i == 8 {
         Ok((commands::HorizontalMultiplier{multiplier: i}, input))
     } else {
         let msg = Cow::Owned(String::from("Invalid argument for Horizontal Multiplier"));
@@ -49,7 +48,7 @@ fn parse_h_mult<I>(input: State<I>) -> ParseResult<commands::HorizontalMultiplie
 fn parse_v_mult<I>(input: State<I>) -> ParseResult<commands::VerticalMultiplier, I>
     where I: Stream<Item=char> {
     let (i, input) = try!(parse_integer(input));
-    if (i >= 1 && i <= 9) {
+    if i >= 1 && i <= 9 {
         Ok((commands::VerticalMultiplier{multiplier: i}, input))
     } else {
         let msg = Cow::Owned(String::from("Invalid argument for Vertical Multiplier"));
@@ -105,28 +104,32 @@ fn escaped_string<I>(input: State<I>) -> ParseResult<String, I>
         .parse_state(input)
 }
 
+// Parses something followed by a comma, discarding the comma
+//fn lex<'a, P>(p: P) -> Skip<Self, P>
+    //where P: Parser<Input=Self::Input> {
+    //parser(p).skip(satisfy(|c| c == ','));
+//}
+
+fn lex<A, I>(p: &Fn(State<I>) -> ParseResult<A, I>, input: State<I>) -> ParseResult<A, I>
+    where I: Stream<Item=char> {
+    let mut lexed = parser(p).skip(satisfy(|c| c == ','));
+    let (res, input) = try!(lexed.parse_state(input));
+    return Ok((res, input))
+}
+
 pub fn parse_ascii_text<I>(input: State<I>) -> ParseResult<commands::AsciiText, I>
     where I: Stream<Item=char> {
     //let s = "A79,216,0,4,2,2,N,\"USPS\"";
     let mut command = satisfy(|c| c == 'A');
-    let mut comma = satisfy(|c| c == ',');
-
 
     let (_, input)        = try!(command.parse_state(input));
-    let (h_start, input)  = try!(parse_integer(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (v_start, input)  = try!(parse_integer(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (rotation, input) = try!(parse_rotation(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (font, input)     = try!(parse_font(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (h_mult, input)   = try!(parse_h_mult(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (v_mult, input)   = try!(parse_v_mult(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
-    let (reverse, input)  = try!(parse_reverse(input.into_inner()));
-    let (_, input)        = try!(comma.parse_state(input.into_inner()));
+    let (h_start, input)  = try!(lex(&parse_integer, input.into_inner()));
+    let (v_start, input)  = try!(lex(&parse_integer, input.into_inner()));
+    let (rotation, input) = try!(lex(&parse_rotation, input.into_inner()));
+    let (font, input)     = try!(lex(&parse_font, input.into_inner()));
+    let (h_mult, input)   = try!(lex(&parse_h_mult, input.into_inner()));
+    let (v_mult, input)   = try!(lex(&parse_v_mult, input.into_inner()));
+    let (reverse, input)  = try!(lex(&parse_reverse, input.into_inner()));
     let (data, input)     = try!(escaped_string(input.into_inner()));
 
     let at = commands::AsciiText {
