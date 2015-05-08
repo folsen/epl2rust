@@ -104,12 +104,6 @@ fn escaped_string<I>(input: State<I>) -> ParseResult<String, I>
         .parse_state(input)
 }
 
-// Parses something followed by a comma, discarding the comma
-//fn lex<'a, P>(p: P) -> Skip<Self, P>
-    //where P: Parser<Input=Self::Input> {
-    //parser(p).skip(satisfy(|c| c == ','));
-//}
-
 fn lex<A, I>(p: &Fn(State<I>) -> ParseResult<A, I>, input: State<I>) -> ParseResult<A, I>
     where I: Stream<Item=char> {
     let mut lexed = parser(p).skip(satisfy(|c| c == ','));
